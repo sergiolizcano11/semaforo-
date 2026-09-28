@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semáforo Nutricional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 pb-20">
+
+    <header class="sticky top-0 bg-white shadow-md z-50">
+        <div class="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🚦</span>
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800 tracking-tight">Semáforo Nutricional</h1>
+            </div>
+            <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-bold shadow-sm">
+                Puntos: <span id="score-display">0</span> / 5
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 mt-8">
+        <p class="text-center text-gray-600 mb-8 max-w-xl mx-auto">
+            Evalúa los siguientes menús típicos. Pulsa el color del semáforo que creas que le corresponde según lo saludable que sea. ¡Consigue la máxima puntuación!
+        </p>
+
+        <div id="menus-container" class="space-y-6">
+            <!-- Las tarjetas de menú se generarán aquí mediante JavaScript -->
+        </div>
+        
+        <div id="final-message" class="hidden mt-10 p-6 bg-white rounded-2xl shadow-lg text-center fade-in">
+            <h2 class="text-2xl font-bold mb-2">¡Juego Completado!</h2>
+            <p class="text-lg text-gray-600">Has conseguido <span id="final-score" class="font-bold text-blue-600"></span> puntos de 5.</p>
+            <button onclick="location.reload()" class="mt-4 px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors">Volver a jugar</button>
+        </div>
+    </main>
+
+    <script>
+        // Datos de los menús
+        const menus = [
+            {
+                id: 1,
+                emoji: "🍕🥤",
+                title: "Pizza y refresco de cola",
+                correct: "rojo",
+                feedback: "¡Cuidado! Exceso de grasas saturadas y azúcares. Faltan vitaminas y proteínas."
+            },
+            {
+                id: 2,
+                emoji: "🍝🍗🍎",
+                title: "Macarrones con tomate, pollo a la plancha y manzana",
+                correct: "verde",
+                feedback: "¡Genial! Comida equilibrada con hidratos, proteínas y fibra."
+            },
+            {
+                id: 3,
+                emoji: "🥪🧃",
+                title: "Bocadillo de jamón y queso con zumo industrial",
+                correct: "amarillo",
+                feedback: "Bien el bocadillo, pero el zumo industrial tiene demasiados azúcares añadidos."
+            },
+            {
+                id: 4,
+                emoji: "🍔🍟🍦",
+                title: "Hamburguesa de comida rápida, patatas fritas y helado",
+                correct: "rojo",
+                feedback: "¡Atención! Comida ultraprocesada, muy alta en sodio y grasas trans."
+            },
+            {
+                id: 5,
+                emoji: "🥗🐟🥣",
+                title: "Ensalada de garbanzos, atún y yogur natural",
+                correct: "verde",
+                feedback: "¡Perfecto! Excelente aporte de fibra, proteína saludable y probióticos."
+            }
+        ];
+
+        // Estado de la aplicación
+        let score = 0;
+        let answeredCount = 0;
+        const totalMenus = menus.length;
+
+        const container = document.getElementById('menus-container');
+        const scoreDisplay = document.getElementById('score-display');
+
+        function renderMenus() {
+            menus.forEach((menu, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transition-all duration-300 hover:shadow-md';
+                card.id = `card-${menu.id}`;
+                
+                card.innerHTML = `
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="text-4xl bg-gray-50 p-3 rounded-xl">${menu.emoji}</div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Menú ${index + 1}</h3>
+                            <h2 class="text-xl font-bold text-gray-800 leading-tight">${menu.title}</h2>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-3 mb-4" id="buttons-${menu.id}">
+                        <button onclick="handleGuess(${menu.id}, 'rojo', this)" class="py-3 px-2 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 active:scale-95 transition-all shadow-sm flex flex-col items-center justify-center gap-1">
+                            <span class="w-4 h-4 rounded-full bg-white/30 mb-1"></span>
+                            Rojo
+                        </button>
+                        <button onclick="handleGuess(${menu.id}, 'amarillo', this)" class="py-3 px-2 rounded-xl font-bold text-yellow-900 bg-yellow-400 hover:bg-yellow-500 active:scale-95 transition-all shadow-sm flex flex-col items-center justify-center gap-1">
+                            <span class="w-4 h-4 rounded-full bg-white/40 mb-1"></span>
+                            Ambar
+                        </button>
+                        <button onclick="handleGuess(${menu.id}, 'verde', this)" class="py-3 px-2 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 active:scale-95 transition-all shadow-sm flex flex-col items-center justify-center gap-1">
+                            <span class="w-4 h-4 rounded-full bg-white/30 mb-1"></span>
+                            Verde
+                        </button>
+                    </div>
+
+                    <div id="feedback-${menu.id}" class="hidden mt-4 p-4 rounded-xl text-sm md:text-base font-medium">
+                        <!-- El feedback aparecerá aquí -->
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        function handleGuess(menuId, selectedColor, buttonElement) {
+            const menu = menus.find(m => m.id === menuId);
+            if (!menu) return;
+
+            const isCorrect = selectedColor === menu.correct;
+            const buttonsContainer = document.getElementById(`buttons-${menuId}`);
+            const feedbackElement = document.getElementById(`feedback-${menuId}`);
+            const cardElement = document.getElementById(`card-${menuId}`);
+
+            // Actualizar puntuación si es correcto
+            if (isCorrect) {
+                score++;
+                scoreDisplay.textContent = score;
+                // Efecto visual en la puntuación
+                scoreDisplay.parentElement.classList.add('bg-green-100', 'text-green-800');
+                scoreDisplay.parentElement.classList.remove('bg-blue-100', 'text-blue-800');
+                setTimeout(() => {
+                    scoreDisplay.parentElement.classList.remove('bg-green-100', 'text-green-800');
+                    scoreDisplay.parentElement.classList.add('bg-blue-100', 'text-blue-800');
+                }, 500);
+            }
+
+            // Deshabilitar todos los botones de esta tarjeta
+            const buttons = buttonsContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-red-600', 'hover:bg-yellow-500', 'hover:bg-green-600', 'active:scale-95');
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+
+            // Resaltar el botón seleccionado
+            buttonElement.classList.remove('opacity-50');
+            buttonElement.classList.add('ring-4', isCorrect ? 'ring-green-300' : 'ring-red-300', 'opacity-100');
+
+            // Mostrar el feedback
+            feedbackElement.classList.remove('hidden');
+            feedbackElement.classList.add('fade-in');
+            
+            // Estilar el contenedor de feedback según acierto/fallo
+            if (isCorrect) {
+                feedbackElement.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200');
+                feedbackElement.innerHTML = `<strong>¡Correcto! ✅</strong> ${menu.feedback}`;
+                cardElement.classList.add('border-green-200', 'bg-green-50/30');
+            } else {
+                feedbackElement.classList.add('bg-red-50', 'text-red-800', 'border', 'border-red-200');
+                feedbackElement.innerHTML = `<strong>Incorrecto ❌</strong> (Era color ${menu.correct}). <br> ${menu.feedback}`;
+                cardElement.classList.add('border-red-200', 'bg-red-50/30');
+            }
+
+            // Comprobar si se ha terminado el juego
+            answeredCount++;
+            if (answeredCount === totalMenus) {
+                setTimeout(() => {
+                    const finalMessage = document.getElementById('final-message');
+                    document.getElementById('final-score').textContent = score;
+                    finalMessage.classList.remove('hidden');
+                    // Hacer scroll hacia el mensaje final
+                    finalMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 800);
+            }
+        }
+
+        // Inicializar la aplicación al cargar la ventana
+        window.onload = renderMenus;
+    </script>
+</body>
+</html>
